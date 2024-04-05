@@ -21,6 +21,7 @@ resource "azurerm_resource_group" "sholder-sandbox" {
   location = "East US"
   tags = {
     environment = "dev"
+    owner       = "sholder"
   }
 
 }
@@ -110,6 +111,22 @@ resource "azurerm_network_interface" "Shaun-LinuxWeb-Adapter" {
   }
 }
 
+resource "azurerm_network_interface" "Shaun-Windows1-Adapter" {
+  name                = "Shaun-Windows1-Adapter"
+  resource_group_name = azurerm_resource_group.sholder-sandbox.name
+  location            = azurerm_resource_group.sholder-sandbox.location
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.Shaun-Subnet-Jumpbox.id
+    private_ip_address_allocation = "Dynamic"
+  }
+
+  tags = {
+    environment = "dev"
+  }
+}
+
 resource "azurerm_linux_virtual_machine" "Shaun-vm-linuxweb1" {
   name                = "Shaun-vm-linuxweb1"
   resource_group_name = azurerm_resource_group.sholder-sandbox.name
@@ -121,8 +138,8 @@ resource "azurerm_linux_virtual_machine" "Shaun-vm-linuxweb1" {
   ]
 
   admin_ssh_key {
-    username   = "adminuser"
-    public_key = file("~/.ssh/AzureLabKey.pub")
+    username   = "SholderAdmin"
+    public_key = file("./.ssh/AzureLabKey.pub")
   }
 
   os_disk {
@@ -134,6 +151,30 @@ resource "azurerm_linux_virtual_machine" "Shaun-vm-linuxweb1" {
     publisher = "Canonical"
     offer     = "UbuntuServer"
     sku       = "18.04-LTS"
+    version   = "latest"
+  }
+}
+
+resource "azurerm_windows_virtual_machine" "Windows1" {
+  name                = "Windows1"
+  resource_group_name = azurerm_resource_group.sholder-sandbox.name
+  location            = azurerm_resource_group.sholder-sandbox.location
+  size                = "Standard_B1ms"
+  admin_username      = "SholderAdmin"
+  admin_password      = "D0n0t4g3tm3!"
+  network_interface_ids = [
+    azurerm_network_interface.Shaun-Windows1-Adapter.id,
+  ]
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "MicrosoftWindowsServer"
+    offer     = "WindowsServer"
+    sku       = "2019-Datacenter"
     version   = "latest"
   }
 }
